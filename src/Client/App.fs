@@ -1,38 +1,37 @@
 module App
-open Sutil
+open Sutil.Html
 open Sutil.DOM
-open Sutil.Attr
 open Sutil.Bulma
+open Sutil.Attr
 open Sutil.Styling
-open Feliz
 
-let css = [
-        rule "p" [
-            Css.color "orange"
-            Css.fontFamily "'Comic Sans MS', cursive"
-            Css.fontSize (length.em 2.0)
-        ]
-    ]
+type Model = Empty
 
-let Nested() =
-   Html.p [ DOM.text "...don't affect this element" ] |> withStyle []
+type Message = NoOp
 
-// In Sutil, the view() function is called *once*
-let view() =
-    Html.div [
-        Html.p [
-            DOM.text "These styles..."
-        ]
-        Nested()
-        Html.p [
-            DOM.text "just trying some shit,,"
+let init ():Model = Empty
 
-        ]
+let update (msg:Message) (model:Model) : Model = model
 
-        withStyle css <| Nested()
+let mainStyleSheet =
+    Sutil.Bulma.withBulmaHelpers
+        [rule "nav.navbar" [Css.backgroundColor "#EEEEEE"]]
 
-    ]
+module Navbar =
+    open Sutil.Html
+    open Bulma
+    let section =
+        bulma.navbar[Navbar.brand [Navbar.item[ Html.text "STONK"]]]
+
+module Main =
+    let section =
+        bulma.columns
+           [bulma.column[column.is2 ];
+                bulma.column[column.is10]];
 
 
-// Start the app
-view() |> mountElement "sutil-app"
+let view () =
+    bulma.container [Navbar.section; Main.section]
+    |> withStyle mainStyleSheet
+
+view () |> mountElement "sutil-app"
