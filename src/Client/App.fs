@@ -14,8 +14,9 @@ let init ():Model = Empty
 let update (msg:Message) (model:Model) : Model = model
 
 let mainStyleSheet =
-    Sutil.Bulma.withBulmaHelpers
-        [rule "nav.navbar" [Css.backgroundColor "#EEEEEE"]]
+    Sutil.Bulma.withBulmaHelpers[
+        rule "nav.navbar" [Css.backgroundColor "#EEEEEE"]]
+
 
 module Navbar =
     open Sutil.Html
@@ -26,12 +27,12 @@ module Navbar =
 module Main =
     let section =
         bulma.columns
-           [bulma.column[column.is2 ];
+           [bulma.column[column.is2; color.hasBackgroundLight];
                 bulma.column[column.is10]];
 
 
 let view () =
-    bulma.container [Navbar.section; Main.section]
+    Html.div [Navbar.section; Main.section]
     |> withStyle mainStyleSheet
 
 view () |> mountElement "sutil-app"
