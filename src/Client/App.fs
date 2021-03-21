@@ -1,7 +1,6 @@
 module App
 open Sutil.Html
 open Sutil.DOM
-open Sutil.DOM.CssRules
 open Sutil.Bulma
 open Sutil.Attr
 open Sutil.Styling
@@ -9,15 +8,43 @@ open Sutil
 open System
 
 [<Measure>]type percentage
+[<Measure>]type price
+type Symbol = Symbol of string
+type SharePrice = SharePrice of decimal<price>
+type Quantity = Quantity of uint
+type ShareQty = ShareQty of Quantity
+type Pnl = Pnl of decimal<percentage>
+type OpenPnl = OpenPnl of Pnl
+type DayPnl = DayPnl of Pnl
+type PortfolioOpenPnl = PortfolioOpenPnl of OpenPnl
+type PortfolioDayPnl = PortfolioDayPnl of DayPnl
+type PositionOpenPnl = PositionOpenPnl of OpenPnl
+type PositionDayPnl = PositionDayPnl of DayPnl
+type Balances = Undefined
+type PositionInfo =
+    {
+        Symbol:Symbol
+        Price : SharePrice
+        OpenQty: ShareQty
+        OpenPnl: PositionOpenPnl
+        DayPnl : PositionDayPnl
+    }
+type Portfolio =
+    {
+        Positions: PositionInfo list
+        Balances: Balances
+    }
+
 
 type SummaryInfo =
-    | Positions
+    | Positions of PositionInfo List
     | Balances
 
 type Model =
     {
-        OpenPnl: decimal<percentage>
-        DayPnl: decimal<percentage>
+        PortfolioOpenPnl: PositionOpenPnl
+        PortfolioDayPnl: PortfolioDayPnl
+        Portfoli:Portfolio
         SelectedPane:SummaryInfo
     }
 
@@ -72,8 +99,24 @@ module Navbar =
         ]
 module SummaryPage =
     let positionsTable =
-        bulma.table [
+        let header =
+            Html.thead[
+                Html.tr[
+                    Html.th[Html.text "Symbol"]
+                    Html.th[Html.text "Price"]
+                    Html.th[
+                        Html.text "Qty"
+                        Html.abbr[attr ("Title", "Open Quantity")]
+                    ]
+                    Html.th[
+                        Html.text "Open Pnl"
+                        Html.abbr[attr ("Title", "Open profit and loss")]
+                    ]
+                ]
+            ]
 
+        bulma.table [
+            header
         ]
     let pnlElement (title:string) (percentage:decimal<percentage>) =
         let percentageSpan =
