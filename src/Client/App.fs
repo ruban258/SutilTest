@@ -5,6 +5,8 @@ open Sutil.DOM.CssRules
 open Sutil.Bulma
 open Sutil.Attr
 open Sutil.Styling
+open Sutil
+open System
 
 [<Measure>]type percentage
 
@@ -19,16 +21,23 @@ type Model =
         SelectedPane:SummaryInfo
     }
 
-type Message = NoOp
+type Message =
+    | SelectedPaneSelected of SummaryInfo
 
 let init ():Model =
     {
         OpenPnl = 3.0M<percentage>
         DayPnl = -0.5M<percentage>
-        SelectedPane = Positions
+        SelectedPane = Balances
     }
 
-let update (msg:Message) (model:Model) : Model = model
+let update (msg:Message) (model:Model) : Model =
+    match msg with
+    | SelectedPaneSelected summaryInfo ->
+        if summaryInfo <> model.SelectedPane then
+            {model with SelectedPane = summaryInfo}
+        else
+            model
 
 let mainStyleSheet =
     Sutil.Bulma.withBulmaHelpers[
@@ -45,6 +54,10 @@ let mainStyleSheet =
         ]
         rule ".pnl-percent.positive" [ Css.color "green"]
         rule ".pnl-percent.negative" [ Css.color "#ff0000"]
+        rule "button.selected" [
+            Css.backgroundColor "#6A42B7"
+            Css.color "white"
+        ]
     ]
 module Navbar =
     open Sutil.Html
@@ -57,8 +70,11 @@ module Navbar =
                 ]
             ]
         ]
+module SummaryPage =
+    let positionsTable =
+        bulma.table [
 
-module Main =
+        ]
     let pnlElement (title:string) (percentage:decimal<percentage>) =
         let percentageSpan =
             Html.span[
@@ -79,24 +95,43 @@ module Main =
                 percentageSpan
             ]
         ]
-    let buttons (text:string) =
+    let buttons summaryInfo (text:string) (isSelectedStore:IObservable<bool>) dispatch=
         let button =
             Bulma.Level.item[
-                bulma.buttons[Html.text text]
+                Html.button[
+                    Html.text text
+                    onClick (fun e -> dispatch <| SelectedPaneSelected summaryInfo )[]
+                    bindClass isSelectedStore "selected"
+                ]
             ]
         button
-    let level =
+    let level (selectedPaneStore:IObservable<SummaryInfo>) dispatch =
+        let isPositionsSelected =
+            selectedPaneStore
+            |> Store.map (function Positions -> true | _ -> false)
+        let isBalancesSelected =
+            selectedPaneStore
+            |> Store.map (function Balances -> true | _ -> false)
         bulma.level[
             Bulma.Level.left [
-                buttons "Positions"
-                buttons "Balances"
+                buttons Positions "Positions" isPositionsSelected dispatch
+                buttons Balances "Balances" isBalancesSelected dispatch
             ]
             Bulma.Level.right[
                 pnlElement "Open pnl" -0.3M<percentage>
                 pnlElement "Day pnl" 0.3M<percentage>
             ]
         ]
-    let contentView =
+    let ContentView model dispatch=
+        let selectedPaneStore =
+            model
+            |> Store.map(fun selectd -> selectd.SelectedPane)
+            |> Store.distinct
+
+        let getViewForSelectedPane = function
+        | Positions -> positionsTable
+        | Balances -> Html.text "not done yet"
+
         bulma.section[
             Html.div [
                 style [Css.backgroundColor Color.lightGrey; Css.overflowHidden]
@@ -105,14 +140,15 @@ module Main =
                     Html.text "Account summary" |> Html.h3
                     bulma.container[
                         class' "pt-5"
-                        level
+                        level selectedPaneStore dispatch
+                        Bind.fragment selectedPaneStore getViewForSelectedPane
                     ]
                 ]
             ]
         ]
-    let section =
+module Main =
+    let section model dispatch=
         bulma.columns[
-            columns.isDesktop
             bulma.column[
                 column.is2
                 color.hasBackgroundLight
@@ -120,14 +156,16 @@ module Main =
             bulma.column[
                 column.is10
                 color.hasBackgroundLight
-                contentView
+                SummaryPage.ContentView model dispatch
             ]
         ]
-
 let view () =
+    let model, dispatch = Store.makeElmishSimple init update ignore ()
+
     Html.div [
-        Navbar.section;
-        Main.section
+        disposeOnUnmount [model]
+        Navbar.section
+        Main.section model dispatch
     ]
     |> withStyle mainStyleSheet
 
