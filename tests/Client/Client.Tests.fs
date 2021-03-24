@@ -1,20 +1,15 @@
 module Client.Tests
-
 open Fable.Mocha
+open Types
+let pnl = testList "Pnl" [
+    testCase "Position Open Pnl Calculates Correctly" <| fun _ ->
+        let position = SeedData.positionInfo
+        let expected = PositionOpenPnl(OpenPnl(Pnl 100.0M<percentage>))
+        let actual = PositionOpenPnl.calculate position
+        Expect.equal actual expected "Open Pnl Calculates Correctly"
 
-open Index
-open Shared
-
-let client = testList "Client" [
-    testCase "Added todo" <| fun _ ->
-        let newTodo = Todo.create "new todo"
-        let model, _ = init ()
-
-        let model, _ = update (AddedTodo newTodo) model
-
-        Expect.equal 1 model.Todos.Length "There should be 1 todo"
-        Expect.equal newTodo model.Todos.[0] "Todo should equal new todo"
 ]
+let client = testList "Client" [pnl]
 
 let all =
     testList "All"
