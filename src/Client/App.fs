@@ -21,20 +21,6 @@ type Model =
 
 type Message =
     | SelectedPaneChanged of PortfolioTab
-let init ():Model =
-    {
-        Portfolio = portfolio
-        CurrentPortfolioTab = Positions
-    }
-
-let update (msg:Message) (model:Model) : Model =
-    match msg with
-    | SelectedPaneChanged portfolioTab ->
-        if portfolioTab <> model.CurrentPortfolioTab then
-            {model with CurrentPortfolioTab = portfolioTab}
-        else
-            model
-
 let mainStyleSheet =
     Sutil.Bulma.withBulmaHelpers[
         rule "nav.navbar" [
@@ -55,6 +41,17 @@ let mainStyleSheet =
             Css.color "white"
         ]
     ]
+module Pnl =
+    let percentageSpan (percentage:decimal<percentage>)=
+            Html.span[
+                class' "pnl-percent"
+                if percentage >= 0.0M<percentage> then
+                    class' "positive"
+                else
+                    class' "negative"
+                Html.text $"""{percentage}{"%"}"""
+            ]
+
 module Navbar =
     open Sutil.Html
     open Bulma
@@ -95,6 +92,11 @@ module SummaryPage =
                 position.Stock.CurrentPrice
                 |> CurrentStockPrice.get
                 |> string
+            let openPnl =
+                position
+                |> PositionOpenPnl.calculate
+                |> PositionOpenPnl.get
+
 
             Html.tr[
                 Html.td[
@@ -113,6 +115,10 @@ module SummaryPage =
                     openQtyString
                     |> Html.text
                 ]
+                Html.td[
+                    openPnl
+                    |> Pnl.percentageSpan
+                ]
             ]
         let rows (positions:PositionInfo list) =
             positions
@@ -125,15 +131,7 @@ module SummaryPage =
 
 
     let pnlElement (title:string) (percentage:decimal<percentage>) =
-        let percentageSpan =
-            Html.span[
-                class' "pnl-percent"
-                if percentage >= 0.0M<percentage> then
-                    class' "positive"
-                else
-                    class' "negative"
-                Html.text $"""{percentage}{"%"}"""
-            ]
+
         Bulma.Level.item[
             bulma.container[
                 style[Css.textAlignCenter]
@@ -141,7 +139,7 @@ module SummaryPage =
                     class' "mb-2"
                     Html.text title
                 ]
-                percentageSpan
+                Pnl.percentageSpan percentage
             ]
         ]
     let buttons portfolioTab (isSelectedStore:IObservable<bool>) dispatch=
@@ -218,6 +216,19 @@ module Main =
                 SummaryPage.ContentView model dispatch
             ]
         ]
+let init ():Model =
+    {
+        Portfolio = portfolio
+        CurrentPortfolioTab = Positions
+    }
+
+let update (msg:Message) (model:Model) : Model =
+    match msg with
+    | SelectedPaneChanged portfolioTab ->
+        if portfolioTab <> model.CurrentPortfolioTab then
+            {model with CurrentPortfolioTab = portfolioTab}
+        else
+            model
 let view () =
     let model, dispatch = Store.makeElmishSimple init update ignore ()
 

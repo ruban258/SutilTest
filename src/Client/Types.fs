@@ -57,3 +57,4 @@ module Types
             let pnlRatio = ((current - openPrice) / openPrice)
             let pnl = pnlRatio * 100.0M<percentage>
             (PositionOpenPnl << OpenPnl << Pnl) pnl
+        let get (PositionOpenPnl(OpenPnl(Pnl num ))) = num
